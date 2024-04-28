@@ -1,0 +1,185 @@
+<?php
+// Create connection
+$conn = mysqli_connect("localhost", "root", "", "project");
+
+// Check connection
+if (!$conn) {
+    die("Connection failed: " . mysqli_connect_error());
+}
+
+// Define variables to store user input for login
+$logUsername = $logPassword = "";
+
+// Define variables to store error messages for login
+$logPasswordErr = "";
+
+// Check if the form is submitted for login
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["login"])) {
+
+    $logUsername = test_input($_POST["logUsername"]);
+
+    $logPassword = test_input($_POST["logPassword"]);
+
+    // Retrieve password from the database based on the entered Username
+    $stmt = $conn->prepare("SELECT name,password FROM admin WHERE username = ?");
+    $stmt->bind_param("s", $logUsername);
+    $stmt->execute();
+    $stmt->bind_result($name,$Password);
+    $stmt->fetch();
+    if ($stmt->num_rows > 0) {
+        $logPasswordErr = "Wrong Username or password";
+    }
+    $stmt->close();
+
+    // Verify the entered password against the  password
+    if ($logPassword===$Password) {
+        // Password is correct, redirect to the home page or perform other actions
+        session_start();
+        $_SESSION["username"] = $name;
+        header("Location: adminwelcome.php");
+        exit();
+    } else {
+        // Password is incorrect
+        $logPasswordErr = "Incorrect password";
+    }
+}
+
+// Function to sanitize user input
+function test_input($data) {
+    $data = trim($data);
+    $data = stripslashes($data);
+    $data = htmlspecialchars($data);
+    return $data;
+}
+
+// Close the database connection
+mysqli_close($conn);
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login</title>
+    <style>
+    body{
+        border: 1px solid black;
+    width: 500px;
+    height: 400px;
+    margin-left:400px;
+    margin-top: 100px;
+    background: url('dark.jpg');
+    color:black ;
+    border-radius: 50px;
+    box-shadow: 0px 0px 20px 5px rgba(0, 0, 0, 0.75);
+    background-size: cover;
+    background-position: center;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    }
+
+    .container {
+    max-width: 100%;
+    margin-left: 50px;
+    padding: 400px;
+    border-radius: 2px;
+    }
+    form{
+        background-color: rgb(238, 238, 218);
+    backdrop-filter: blur(100px);
+    padding: 20px;
+    border-radius: 8px; 
+    box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+    max-width: 22vw;
+    }
+
+    .input-group {
+        margin-bottom: 15px;
+        padding: 5px;
+        width:100%;
+
+    }
+
+    h2{
+        text-align: center;
+    }
+
+    .input-group label {
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .input-group input {
+        width: 100%;
+        border-radius: 2px;
+        border: 1px solid #ccc;
+    }
+
+    .error {
+        color: red;
+        font-size: 14px;
+    }
+
+    .button{
+        display:flex;
+        justify-content:center;
+    }
+    .btn {
+        background-color: #007bff;
+        color: #fff;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 2px;
+        cursor: pointer;
+    }
+    </style>
+</head>
+<body>
+    <div id="login-form" class="container">
+        <h2>Admin Login</h2>
+            <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" onsubmit="return validateForm()">
+                <!-- Login form fields go here -->
+                <label for="logUsername">Username:</label>
+                <input type="text" name="logUsername" id="logUsername" value="<?php echo $logUsername; ?>">
+                <span class="error" id="logUsernameErr"></span>
+                <br><br>
+
+                <label for="logPassword">Password:</label>
+                <input type="password" name="logPassword" id="logPassword" value="<?php echo $logPassword; ?>">
+                <span class="error" id="logPasswordErr"><?php echo $logPasswordErr; ?></span>
+                <br><br>
+
+                <input class="submit-button" type="submit" name="login" value="Login">
+                <br>
+
+                
+            </form>
+    </div>
+    <script>
+        function validateForm() {
+            var logUsername = document.getElementById("logUsername").value;
+            var logPassword = document.getElementById("logPassword").value;
+
+            // Reset previous error messages
+            document.getElementById("logUsernameErr").innerText = "";
+            document.getElementById("logUsernameErr").innerText = "";
+
+            // Validate Username
+            if (logUsername === "") {
+                document.getElementById("logUsernameErr").innerText = "Username is required";
+                return false;
+            }
+
+            // Validate Password
+            if (logPassword === "") {
+                document.getElementById("logPasswordErr").innerText = "Password is required";
+                return false;
+            }
+            
+            return true;
+        }
+    </script>
+</body>
+</html>
